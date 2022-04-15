@@ -1,6 +1,8 @@
-# 使用PyTorch进行图像数据增强的方法
-在这个笔记中，我将记录使用PyTorch进行图像数据增强的方法。这个笔记主要来自[李沐老师的视频课程中的内容](https://www.bilibili.com/video/BV17y4y1g76q?spm_id_from=333.999.0.0)和[李沐老师的动手学深度学习教材13.1图像增广](https://zh-v2.d2l.ai/chapter_computer-vision/image-augmentation.html)
+# 对图像进行数据增强的方法
+在这个笔记中，我将记录一些图像数据增强的方法。首先来看看使用PyTorch进行图像数据增强的方法。用PyTorch进行图像数据增强的方法主要来自[李沐老师的视频课程中的内容](https://www.bilibili.com/video/BV17y4y1g76q?spm_id_from=333.999.0.0)和[李沐老师的动手学深度学习教材13.1图像增广](https://zh-v2.d2l.ai/chapter_computer-vision/image-augmentation.html)。然后，我们使用著名的图像增强开源库[imgaug](https://github.com/aleju/imgaug)来进行图像增强。
 
+
+## 使用PyTorch进行图像数据增强的方法
 首先，我们创建一个空白脚本`test.py`，并启用如下的名为`superglue`的conda虚拟环境。运行`pip list`命令，可以看到，`superglue`虚拟环境中的包的版本如下：
 ```
 Package           Version
@@ -44,13 +46,32 @@ from torch import nn
 import cv2
 ```
 
-## 常用的图像增广方法
+### 常用的图像增广方法
 本节内容参考[李沐老师的教材13.1.1常用的图像增广方法](https://zh-v2.d2l.ai/chapter_computer-vision/image-augmentation.html#id2)
 
 由于我是使用ssh远程连接的开发机，因此，无法使用诸如`cv2.imshow()`这一类的方法。我的办法是：保存增强之后的8张图像，使用`code 1.jpg`、`code 2.jpg`、...、`code 8.jpg`这8个命令用vscode把图像打开。这样每次生成新的图像之后，就可以直接用vscode来查看新生成的图像了。
 
-### 水平翻转
-首先我们来试试水平翻转，也就是所谓的左右翻转。左右翻转图像通常不会改变对象的类别，这是最早且最广泛使用的图像增广方法之一。测试下述代码：
+#### 水平翻转
+首先要注意：PyTorch的`torchvision.transforms`中的函数只能对PIL格式的图像数据进行数据增强。测试下述代码：
+``` python
+import torch
+import torchvision
+from torch import nn
+from PIL import Image
+
+img = Image.open("/data/zitong.yin/dongshouxuedeeplearning/cat1.jpg")
+
+print("type(img): ", type(img))
+print("img.shape: ", img.size)
+```
+结果为：
+```
+type(img):  <class 'PIL.JpegImagePlugin.JpegImageFile'>
+img.shape:  (500, 400)
+```
+由此就明白了：**PyTorch的`torchvision.transforms`中的函数只能对PIL格式的图像数据进行数据增强。**
+
+我们来试试水平翻转，也就是所谓的左右翻转。左右翻转图像通常不会改变对象的类别，这是最早且最广泛使用的图像增广方法之一。测试下述代码：
 ``` python
 import torch
 import torchvision
@@ -72,7 +93,7 @@ apply(img, torchvision.transforms.RandomHorizontalFlip())
 ```
 可以看到，8张新生成的图像展示出了随机的左右翻转。
 
-### 上下翻转
+#### 上下翻转
 上下翻转图像不如左右图像翻转那样常用。但是，至少对于这个示例图像，上下翻转不会妨碍识别。测试下述代码：
 ``` python
 import torch
@@ -95,7 +116,7 @@ apply(img, torchvision.transforms.RandomVerticalFlip())
 ```
 可以看到，8张新生成的图像展示出了随机的上下翻转。
 
-### 随机裁剪
+#### 随机裁剪
 我们可以通过对图像进行随机裁剪，使物体以不同的比例出现在图像的不同位置。 这也可以降低模型对目标位置的敏感性。
 
 在下面的代码中，我们随机裁剪一个面积为原始面积10%到100%的区域，该区域的宽高比从0.5到2之间随机取值。 然后，区域的宽度和高度都被缩放到200像素。 在本节中（除非另有说明），$a$和$b$之间的随机数指的是在区间$[a,b]$中通过均匀采样获得的连续值。
@@ -126,7 +147,7 @@ apply(img, shape_aug)
 ```
 可以看到，8张新生成的图像被统一缩放成了$200 \times 200$的尺寸，并且经过了随机裁剪。
 
-### 改变颜色
+#### 改变颜色
 另一种增广方法是改变颜色。 我们可以改变图像颜色的四个方面：亮度、对比度、饱和度和色调。 在下面的示例中，我们随机更改图像的亮度，随机值为原始图像的50%（也就是(1-0.5)）到150%（也就是(1+0.5)）之间。
 
 测试下述代码：
@@ -206,7 +227,7 @@ apply(img, color_aug)
 可以看到，8张新生成的图像被随机调整了亮度和色调。既有亮度的调整，也有色调的调整。
 
 
-### 同时使用多种图像增强方法
+#### 同时使用多种图像增强方法
 在实践中，我们将结合多种图像增广方法。比如，我们可以通过使用一个Compose实例来综合上面定义的不同的图像增广方法，并将它们应用到每个图像。测试下述代码：
 ``` python
 import torch
@@ -243,4 +264,119 @@ apply(img, augs)
 
 **另外，有一点需要注意：在李沐老师的视频教程里提到，一般来说，图片增强torchvision.transforms.Compose()函数的最后，需要跟一个torchvision.transforms.ToTensor()，把图像转换成PyTorch张量，用于训练。**
 
-本次图像增强方法的介绍暂且先到这里，之后或许会更新更多的图像增强方法。
+本次使用PyTorch来进行图像增强方法的介绍暂且先到这里，之后或许会更新更多的图像增强方法。
+
+
+## 使用imgaug进行图像数据增强的方法
+接下来我们来看一些使用[imgaug](https://github.com/aleju/imgaug)来进行图像数据增强的方法。这个库的安装和用法只需要遵循[Github上的README文件中的指引](https://github.com/aleju/imgaug#installation)就可以了。
+
+首先要注意：imgaug只能对numpy数组格式的图像数据进行图像数据增强。测试下述代码：
+``` python
+import cv2
+import imgaug
+from imgaug import augmenters as iaa
+
+img = cv2.imread("/data/zitong.yin/dongshouxuedeeplearning/squirrel.jpg")
+
+print("type(img): ", type(img))
+print("img.shape: ", img.shape)
+```
+结果为：
+```
+type(img):  <class 'numpy.ndarray'>
+img.shape:  (129, 192, 3)
+```
+由此可知：**imgaug图像增强库只能对numpy数组格式的图像数据进行增强。**
+
+
+### 图像旋转
+我们首先来对图像做一个简单的旋转。测试下述代码：
+``` python
+import cv2
+import imgaug
+from imgaug import augmenters as iaa
+
+img = cv2.imread("/data/zitong.yin/dongshouxuedeeplearning/squirrel.jpg")
+
+rotate = iaa.Affine(rotate=(-25, 25))
+image_aug = rotate(image=img)
+
+cv2.imwrite("1.jpg", image_aug)
+```
+可以看到，图像被旋转了一些。
+
+### 多种图像增强方法的组合使用
+我们再来试试同时应用几种图像数据增强的方法的组合。测试下述代码：
+``` python
+import cv2
+import imgaug
+from imgaug import augmenters as iaa
+
+img = cv2.imread("/data/zitong.yin/dongshouxuedeeplearning/squirrel.jpg")
+
+seq = iaa.Sequential(
+    [
+        iaa.Affine(rotate=(-25, 25)),
+        iaa.AdditiveGaussianNoise(scale=(10, 60)),
+        iaa.Crop(percent=(0, 0.2)),
+    ]
+)
+
+image_aug = seq(image=img)
+
+cv2.imwrite("1.jpg", image_aug)
+```
+可以看到，我们的图像被旋转、加了高斯噪音，并被裁剪了。
+
+### 颜色通道随机化
+我们可以对输入图像的颜色通道进行随机化。测试下述代码：
+``` python
+import cv2
+import imgaug
+from imgaug import augmenters as iaa
+
+img = cv2.imread("/data/zitong.yin/dongshouxuedeeplearning/squirrel.jpg")
+
+seq = iaa.Sequential(
+    [
+        iaa.ChannelShuffle(0.7),
+        # iaa.Affine(rotate=(-25, 25)),
+        # iaa.AdditiveGaussianNoise(scale=(10, 60)),
+        # iaa.Crop(percent=(0, 0.2)),
+    ]
+)
+
+image_aug = seq(image=img)
+
+cv2.imwrite("1.jpg", image_aug)
+```
+多次运行这段代码，可以看到，图像的颜色通道发生了随机的变化。
+
+### 随机地移除图像的一些部分
+我们来试试随机地移除图像的一些部分。测试下述代码：
+``` python
+import cv2
+import imgaug
+from imgaug import augmenters as iaa
+
+img = cv2.imread("/data/zitong.yin/dongshouxuedeeplearning/squirrel.jpg")
+
+seq = iaa.Sequential(
+    [
+        iaa.Affine(translate_px={"x": (-100, 100)}),
+        iaa.RemoveCBAsByOutOfImageFraction(0.5),
+        # iaa.ChannelShuffle(0.7),
+        # iaa.Affine(rotate=(-25, 25)),
+        # iaa.AdditiveGaussianNoise(scale=(10, 60)),
+        # iaa.Crop(percent=(0, 0.2)),
+    ]
+)
+
+image_aug = seq(image=img)
+
+cv2.imwrite("1.jpg", image_aug)
+```
+可以看到，图像被随机地左右移动了一部分。移出原始边框的部分被填充成了黑色。
+
+
+更多的使用imgaug库的图像增强方法参考[Github上的例子](https://github.com/aleju/imgaug/#example-images)或[官方文档](https://imgaug.readthedocs.io/en/latest/source/overview/meta.html#)
